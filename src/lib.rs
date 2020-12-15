@@ -64,20 +64,32 @@ impl Progress {
     /// if the progress bar should advance by at least one visible "tick".
     pub fn draw(&mut self, bar: &Bar) {
         let b = &self.bars[bar.0];
-        let f = (50 * b.curr / b.total).min(50);
-        let e = 50 - f;
         let pos = self.bars.len() - bar.0;
 
-        print!(
-            "\x1B[s\x1B[{}A\r{:02} [{:#>f$}{}{:->e$}]\x1B[u\r",
-            pos,
-            bar.0,
-            "",
-            '>',
-            "",
-            f = f,
-            e = e
-        );
+        if b.curr >= b.total {
+            print!(
+                "\x1B[s\x1B[{}A\r{:02} [{:#>f$}]\x1B[u\r",
+                pos,
+                bar.0,
+                "",
+                f = 50
+            )
+        } else {
+            let f = (50 * b.curr / b.total).min(49);
+            let e = 49 - f;
+            let pos = self.bars.len() - bar.0;
+
+            print!(
+                "\x1B[s\x1B[{}A\r{:02} [{:#>f$}{}{:->e$}]\x1B[u\r",
+                pos,
+                bar.0,
+                "",
+                '>',
+                "",
+                f = f,
+                e = e
+            );
+        }
 
         // Very important, or the output won't appear fluid.
         self.stdout.flush().unwrap();
