@@ -118,14 +118,14 @@ struct SubBar {
 
 /// A progress bar index for use with [`Progress`].
 ///
-/// This type has no meaning methods of its own. Individual bars are advanced by
-/// method calls on `Progress`:
+/// This type has no meaningful methods of its own. Individual bars are advanced
+/// by method calls on `Progress`:
 ///
 /// ```
 /// use linya::Progress;
 ///
 /// let mut progress = Progress::new();
 /// let bar = progress.bar(100);
-/// progress.inc(&bar);
+/// progress.inc_and_draw(&bar, 1);
 /// ```
 pub struct Bar(usize);
