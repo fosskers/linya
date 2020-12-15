@@ -2,24 +2,15 @@
 
 use std::io::{Stdout, Write};
 
-// - Name: linya (Quenya for "pool"), barred
-// - Focus on multibar support.
-// - Works with ~into_iter()~ out of the box
-// - No need to manually ~listen()~. The first ~inc()~ or ~set()~ of a subbar
-// starts everything.
-// - Bars auto-align
-// - New bars are added on the fly
-// - Only shows a bar if the process is active
-// - Single bar completion is detected automatically
 // - Replicate ILoveCandy
 // - No (or few) dependencies
 // - Spinners...?
-// - No concept of singular bars? There is only one ~Progress~ type from which you
-// request a bar entry, and then are returned a ~Handle~, etc?
-// - *Bar doesn't draw in a separate thread, it blocks in the thread you're in and
-// draws the "frame".* Naturally it locks as it does this. Hm, no, perhaps that's too
-// inefficient. Bar updates could come very fast across all threads, but we don't want
-// that to invoke a draw each time.
+
+// Terminal Support:
+//
+// - [x] Alacritty
+// - [x] xterm
+// - [x] Linux console
 
 /// A progress bar "coordinator" to share between threads.
 pub struct Progress {
@@ -138,76 +129,3 @@ struct SubBar {
 /// progress.inc(&bar);
 /// ```
 pub struct Bar(usize);
-
-//     curr: usize,
-//     total: usize,
-//     done: bool,
-//     filler: char,
-//     head: char,
-//     empty: char,
-// }
-
-// impl SubBar {
-//     /// Form a new single-threaded progress bar.
-//     fn new(total: usize) -> SubBar {
-//         SubBar {
-//             curr: 0,
-//             total,
-//             done: false,
-//             filler: '#',
-//             head: '>',
-//             empty: '-',
-//         }
-//     }
-
-//     /// Increase the progress by 1 unit.
-//     fn inc(&mut self) {
-//         self.set(self.curr + 1)
-//     }
-
-//     /// Set the bar to a specific progress position.
-//     fn set(&mut self, value: usize) {
-//         if !self.done {
-//             self.curr = value;
-//             if self.curr >= self.total {
-//                 self.done = true;
-//             }
-
-//             // self.draw();
-//         }
-//     }
-
-//     // /// Draw the progress bar to the screen at its expected position.
-//     // fn draw(&self) {
-//     //     if !self.done {
-//     //         println!("{}", self.to_string());
-//     //     }
-//     // }
-
-//     // pub fn is_done(&self) -> bool {
-//     //     self.done
-//     // }
-
-//     // /// ```
-//     // /// use linya::Progress;
-//     // ///
-//     // /// let mut p = Progress::new(100);
-//     // /// p.set(10);
-//     // /// let expected = "[#####>---------------------------------------------]";
-//     // /// assert!(!p.is_done());
-//     // /// assert_eq!(expected.to_string(), p.to_string());
-//     // /// p.set(100);
-//     // /// let res = p.to_string();
-//     // /// assert_eq!(52, res.chars().count());
-//     // /// assert_eq!(expected.to_string(), p.to_string());
-//     // /// ```
-//     // pub fn to_string(&self) -> String {
-//     //     if self.done {
-//     //         format!("[{:#>f$}]", "", f = 50)
-//     //     } else {
-//     //         let f = 50 * self.curr / self.total;
-//     //         let e = 50 - f;
-//     //         format!("[{:#>f$}{}{:->e$}]", "", self.head, "", f = f, e = e)
-//     //     }
-//     // }
-// }
