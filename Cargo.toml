@@ -5,3 +5,7 @@ authors = ["Colin Woodbury <colin@fosskers.ca>"]
 edition = "2018"
 
 [dependencies]
+
+[dev-dependencies]
+rand = "0.7"
+rayon = "1.5"
