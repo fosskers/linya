@@ -83,10 +83,7 @@
 //! [mirrormere]: https://www.tednasmith.com/tolkien/durins-crown-and-the-mirrormere/
 //! [arcmutex]: https://doc.rust-lang.org/stable/book/ch16-03-shared-state.html?#atomic-reference-counting-with-arct
 
-use std::{
-    borrow::Cow,
-    io::{Stdout, Write},
-};
+use std::io::{Stdout, Write};
 use terminal_size::{terminal_size, Width};
 
 // - Replicate ILoveCandy
@@ -126,15 +123,12 @@ impl Progress {
     ///
     /// Passing `0` to this function will cause a panic the first time a draw is
     /// attempted.
-    pub fn bar<'a, S>(&mut self, total: usize, lbl: S) -> Bar
-    where
-        S: Into<Cow<'a, str>>,
-    {
+    pub fn bar<'a, S: Into<String>>(&mut self, total: usize, lbl: S) -> Bar {
         let width = self.width.unwrap_or(100) / 2;
-        let label = lbl.into().into_owned();
+        let label = lbl.into();
 
         // An initial "empty" rendering of the new bar.
-        println!("{} [{:->f$}]   0%", label, f = width);
+        println!("{:<l$} [{:->f$}]   0%", label, l = width - 9, f = width);
 
         // let prev = 0;
         let curr = 0;
@@ -161,15 +155,16 @@ impl Progress {
         if let Some(term_width) = self.width {
             let b = &self.bars[bar.0];
             let pos = self.bars.len() - bar.0;
-            let w = term_width / 2;
+            let w = (term_width / 2) - 7;
 
             if b.curr >= b.total {
                 print!(
-                    "\x1B[s\x1B[{}A\r{} [{:#>f$}] 100% \x1B[u\r",
+                    "\x1B[s\x1B[{}A\r{:<l$} [{:#>f$}] 100%\x1B[u\r",
                     pos,
                     b.label,
                     "",
-                    f = w
+                    l = term_width - w - 8,
+                    f = w,
                 )
             } else {
                 let f = (w * b.curr / b.total).min(w - 1);
@@ -177,13 +172,14 @@ impl Progress {
                 let pos = self.bars.len() - bar.0;
 
                 print!(
-                    "\x1B[s\x1B[{}A\r{} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
+                    "\x1B[s\x1B[{}A\r{:<l$} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
                     pos,
                     b.label,
                     "",
                     '>',
                     "",
                     100 * b.curr / b.total,
+                    l = term_width - w - 8,
                     f = f,
                     e = e
                 );
