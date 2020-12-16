@@ -120,7 +120,7 @@ impl Progress {
         let curr = 0;
         let bar = SubBar { curr, total };
         self.bars.push(bar);
-        println!();
+        println!("{:02} [{:->f$}]   0%", 0, f = 50);
         Bar(self.bars.len() - 1)
     }
 
