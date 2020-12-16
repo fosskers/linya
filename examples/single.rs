@@ -8,7 +8,7 @@ fn main() {
     let mut progress = Progress::new();
 
     // An owned handler to an internal bar.
-    let bar: Bar = progress.bar(50);
+    let bar: Bar = progress.bar(50, "Hacking...");
 
     for n in 0..=50 {
         // Incrementing/drawing calls aren't done on `Bar`, but on the parent

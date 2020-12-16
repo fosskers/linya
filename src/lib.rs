@@ -4,7 +4,7 @@
 //!
 //! - Intuitive API.
 //! - First-class support for `rayon`, etc.
-//! - Efficient redraws.
+//! - Efficient, no-allocation redraws.
 //! - Addition of new subbars on-the-fly.
 //! - Single-threaded multi-bars.
 //! - Light-weight / no dependencies.
@@ -31,7 +31,7 @@
 //! // `into_par_iter()` is from `rayon`, and lets us parallelize some
 //! // operation over a collection "for free".
 //! (0..10).into_par_iter().for_each_with(progress, |p, n| {
-//!   let bar: Bar = p.lock().unwrap().bar(50);
+//!   let bar: Bar = p.lock().unwrap().bar(50, format!("Downloading {}", n));
 //!
 //!   // ... Your logic ...
 //!
@@ -57,7 +57,7 @@
 //! use linya::{Bar, Progress};
 //!
 //! let mut progress = Progress::new();
-//! let bar: Bar = progress.bar(50);
+//! let bar: Bar = progress.bar(50, "Downloading");
 //!
 //! // Use in a loop, etc.
 //! progress.set_and_draw(&bar, 10);
@@ -83,7 +83,10 @@
 //! [mirrormere]: https://www.tednasmith.com/tolkien/durins-crown-and-the-mirrormere/
 //! [arcmutex]: https://doc.rust-lang.org/stable/book/ch16-03-shared-state.html?#atomic-reference-counting-with-arct
 
-use std::io::{Stdout, Write};
+use std::{
+    borrow::Cow,
+    io::{Stdout, Write},
+};
 use terminal_size::{terminal_size, Width};
 
 // - Replicate ILoveCandy
@@ -123,16 +126,20 @@ impl Progress {
     ///
     /// Passing `0` to this function will cause a panic the first time a draw is
     /// attempted.
-    pub fn bar(&mut self, total: usize) -> Bar {
-        // let prev = 0;
-        let curr = 0;
-        let bar = SubBar { curr, total };
+    pub fn bar<'a, S>(&mut self, total: usize, lbl: S) -> Bar
+    where
+        S: Into<Cow<'a, str>>,
+    {
         let width = self.width.unwrap_or(100) / 2;
-        self.bars.push(bar);
+        let label = lbl.into().into_owned();
 
         // An initial "empty" rendering of the new bar.
-        println!("{:02} [{:->f$}]   0%", 0, f = width);
+        println!("{} [{:->f$}]   0%", label, f = width);
 
+        // let prev = 0;
+        let curr = 0;
+        let bar = SubBar { curr, total, label };
+        self.bars.push(bar);
         Bar(self.bars.len() - 1)
     }
 
@@ -158,9 +165,9 @@ impl Progress {
 
             if b.curr >= b.total {
                 print!(
-                    "\x1B[s\x1B[{}A\r{:02} [{:#>f$}] 100% \x1B[u\r",
+                    "\x1B[s\x1B[{}A\r{} [{:#>f$}] 100% \x1B[u\r",
                     pos,
-                    bar.0,
+                    b.label,
                     "",
                     f = w
                 )
@@ -170,9 +177,9 @@ impl Progress {
                 let pos = self.bars.len() - bar.0;
 
                 print!(
-                    "\x1B[s\x1B[{}A\r{:02} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
+                    "\x1B[s\x1B[{}A\r{} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
                     pos,
-                    bar.0,
+                    b.label,
                     "",
                     '>',
                     "",
@@ -215,6 +222,7 @@ struct SubBar {
     // prev: usize,
     curr: usize,
     total: usize,
+    label: String,
 }
 
 /// A progress bar index for use with [`Progress`].
@@ -226,7 +234,7 @@ struct SubBar {
 /// use linya::Progress;
 ///
 /// let mut progress = Progress::new();
-/// let bar = progress.bar(100);
+/// let bar = progress.bar(100, "Downloading");
 /// progress.inc_and_draw(&bar, 1);
 /// ```
 ///

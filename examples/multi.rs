@@ -14,11 +14,11 @@ fn main() {
     // `for_each_with` and similar Rayon functions let us pass some `Clone`able
     // value to each concurrent operation. In this case, it's our Arc-wrapped
     // progress bar coordinator.
-    (0..10).into_par_iter().for_each_with(progress, |p, _| {
+    (0..10).into_par_iter().for_each_with(progress, |p, n| {
         // Create a new bar handle. This itself is not a progress bar type as
         // found in similar libraries! Notice below that the increment/draw
         // calls are done on the parent `Progress` type, not this `Bar`.
-        let bar: Bar = p.lock().unwrap().bar(50);
+        let bar: Bar = p.lock().unwrap().bar(50, format!("Downloading #{}", n));
 
         // Determine how fast our thread progresses.
         let wait = rand::thread_rng().gen_range(25, 250);
