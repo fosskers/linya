@@ -85,15 +85,7 @@
 use std::io::{Stdout, Write};
 
 // - Replicate ILoveCandy
-// - No (or few) dependencies
-// - Spinners...?
 // - Show example usage with `curl`
-
-// Terminal Support:
-//
-// - [x] Alacritty
-// - [x] xterm
-// - [x] Linux console
 
 /// A progress bar "coordinator" to share between threads.
 pub struct Progress {
@@ -147,7 +139,7 @@ impl Progress {
 
         if b.curr >= b.total {
             print!(
-                "\x1B[s\x1B[{}A\r{:02} [{:#>f$}]\x1B[u\r",
+                "\x1B[s\x1B[{}A\r{:02} [{:#>f$}] 100% \x1B[u\r",
                 pos,
                 bar.0,
                 "",
@@ -159,12 +151,13 @@ impl Progress {
             let pos = self.bars.len() - bar.0;
 
             print!(
-                "\x1B[s\x1B[{}A\r{:02} [{:#>f$}{}{:->e$}]\x1B[u\r",
+                "\x1B[s\x1B[{}A\r{:02} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
                 pos,
                 bar.0,
                 "",
                 '>',
                 "",
+                100 * b.curr / b.total,
                 f = f,
                 e = e
             );
