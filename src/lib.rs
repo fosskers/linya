@@ -74,6 +74,7 @@
 //! - No bar templating, to avoid dependencies.
 //! - No "rates", since rerenders are not time-based.
 //! - No spinners, also due to no sense of time.
+//! - No dynamic resizing of bars if window size changes.
 //!
 //! # Trivia
 //!
@@ -83,29 +84,36 @@
 //! [arcmutex]: https://doc.rust-lang.org/stable/book/ch16-03-shared-state.html?#atomic-reference-counting-with-arct
 
 use std::io::{Stdout, Write};
+use terminal_size::{terminal_size, Width};
 
 // - Replicate ILoveCandy
 // - Show example usage with `curl`
 
 /// A progress bar "coordinator" to share between threads.
 pub struct Progress {
+    /// The drawable bars themselves.
     bars: Vec<SubBar>,
-    stdout: Stdout,
+    /// A shared handle to `Stdout`, for buffer flushing.
+    out: Stdout,
+    /// Terminal width.
+    width: Option<usize>,
 }
 
 impl Progress {
     /// Initialize a new progress bar coordinator.
     pub fn new() -> Progress {
-        let stdout = std::io::stdout();
+        let out = std::io::stdout();
         let bars = vec![];
-        Progress { bars, stdout }
+        let width = terminal_size().map(|(Width(w), _)| w as usize);
+        Progress { bars, out, width }
     }
 
     /// Like [`Progress::new`] but accepts a size hint to avoid reallocation as bar count grows.
     pub fn with_capacity(capacity: usize) -> Progress {
-        let stdout = std::io::stdout();
+        let out = std::io::stdout();
         let bars = Vec::with_capacity(capacity);
-        Progress { bars, stdout }
+        let width = terminal_size().map(|(Width(w), _)| w as usize);
+        Progress { bars, out, width }
     }
 
     /// Create a new progress bar with default styling and receive an owned
@@ -119,8 +127,12 @@ impl Progress {
         // let prev = 0;
         let curr = 0;
         let bar = SubBar { curr, total };
+        let width = self.width.unwrap_or(100) / 2;
         self.bars.push(bar);
-        println!("{:02} [{:->f$}]   0%", 0, f = 50);
+
+        // An initial "empty" rendering of the new bar.
+        println!("{:02} [{:->f$}]   0%", 0, f = width);
+
         Bar(self.bars.len() - 1)
     }
 
@@ -131,40 +143,48 @@ impl Progress {
 
     /// Force the drawing of a particular [`Bar`].
     ///
-    /// **Note:** Drawing will only occur if there is something to show. Namely,
+    /// **Note 1:** Drawing will only occur if there is something to show. Namely,
     /// if the progress bar should advance by at least one visible "tick".
+    ///
+    /// **Note 2:** If your program is not being run in a terminal, an initial
+    /// empty bar will be printed but never refreshed.
     pub fn draw(&mut self, bar: &Bar) {
-        let b = &self.bars[bar.0];
-        let pos = self.bars.len() - bar.0;
-
-        if b.curr >= b.total {
-            print!(
-                "\x1B[s\x1B[{}A\r{:02} [{:#>f$}] 100% \x1B[u\r",
-                pos,
-                bar.0,
-                "",
-                f = 50
-            )
-        } else {
-            let f = (50 * b.curr / b.total).min(49);
-            let e = 49 - f;
+        // If there is no legal width value present, that means we aren't
+        // running in a terminal, and no rerendering can be done.
+        if let Some(term_width) = self.width {
+            let b = &self.bars[bar.0];
             let pos = self.bars.len() - bar.0;
+            let w = term_width / 2;
 
-            print!(
-                "\x1B[s\x1B[{}A\r{:02} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
-                pos,
-                bar.0,
-                "",
-                '>',
-                "",
-                100 * b.curr / b.total,
-                f = f,
-                e = e
-            );
+            if b.curr >= b.total {
+                print!(
+                    "\x1B[s\x1B[{}A\r{:02} [{:#>f$}] 100% \x1B[u\r",
+                    pos,
+                    bar.0,
+                    "",
+                    f = w
+                )
+            } else {
+                let f = (w * b.curr / b.total).min(w - 1);
+                let e = (w - 1) - f;
+                let pos = self.bars.len() - bar.0;
+
+                print!(
+                    "\x1B[s\x1B[{}A\r{:02} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
+                    pos,
+                    bar.0,
+                    "",
+                    '>',
+                    "",
+                    100 * b.curr / b.total,
+                    f = f,
+                    e = e
+                );
+            }
+
+            // Very important, or the output won't appear fluid.
+            self.out.flush().unwrap();
         }
-
-        // Very important, or the output won't appear fluid.
-        self.stdout.flush().unwrap();
     }
 
     /// Set a [`Bar`]'s value and immediately try to draw it.
