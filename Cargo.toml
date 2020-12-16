@@ -3,6 +3,16 @@ name = "linya"
 version = "0.1.0"
 authors = ["Colin Woodbury <colin@fosskers.ca>"]
 edition = "2018"
+description = "Simple concurrent progress bars."
+homepage = "https://github.com/fosskers/linya"
+repository = "https://github.com/fosskers/linya"
+readme = "README.md"
+license = "MIT"
+keywords = ["cli", "progress", "bar"]
+categories = ["command-line-interface"]
+
+[badges]
+github = { repository = "fosskers/linya", branch = "master", workflow = "Tests" }
 
 [dependencies]
 
