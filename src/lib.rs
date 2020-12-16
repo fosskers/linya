@@ -7,7 +7,7 @@
 //! - Efficient, no-allocation redraws.
 //! - Addition of new subbars on-the-fly.
 //! - Single-threaded multi-bars.
-//! - Light-weight / no dependencies.
+//! - Light-weight.
 //!
 //! # Usage
 //!
@@ -123,14 +123,13 @@ impl Progress {
     ///
     /// Passing `0` to this function will cause a panic the first time a draw is
     /// attempted.
-    pub fn bar<'a, S: Into<String>>(&mut self, total: usize, lbl: S) -> Bar {
+    pub fn bar<S: Into<String>>(&mut self, total: usize, lbl: S) -> Bar {
         let width = self.width.unwrap_or(100) / 2;
         let label = lbl.into();
 
         // An initial "empty" rendering of the new bar.
         println!("{:<l$} [{:->f$}]   0%", label, l = width - 9, f = width);
 
-        // let prev = 0;
         let curr = 0;
         let bar = SubBar { curr, total, label };
         self.bars.push(bar);
