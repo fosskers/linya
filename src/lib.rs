@@ -228,13 +228,14 @@ impl Progress {
 
     /// Cancel the given bar, say in the case of download failure, etc.
     ///
-    /// This fills the bar with the "cancel" character.
-    pub fn cancel(&mut self, bar: &Bar) {
+    /// This fills the bar with the "cancel" character and consumes `Bar`
+    /// ownership so that the bar cannot be manipulated again.
+    pub fn cancel(&mut self, bar: Bar) {
         {
             let mut b = &mut self.bars[bar.0];
             b.cancelled = true;
         }
-        self.set_and_draw(bar, self.bars[bar.0].total);
+        self.set_and_draw(&bar, self.bars[bar.0].total);
     }
 }
 
