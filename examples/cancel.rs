@@ -23,7 +23,7 @@ fn main() {
             // Simulate our "download" failing.
             let it_failed = rng.gen_range(0, 99) < 10;
             if it_failed {
-                p.lock().unwrap().cancel(&bar);
+                p.lock().unwrap().cancel(bar);
                 break;
             }
 
