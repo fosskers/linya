@@ -123,15 +123,20 @@ impl Progress {
     ///
     /// Passing `0` to this function will cause a panic the first time a draw is
     /// attempted.
-    pub fn bar<S: Into<String>>(&mut self, total: usize, lbl: S) -> Bar {
-        let width = self.width.unwrap_or(100) / 2;
-        let label = lbl.into();
+    pub fn bar<S: Into<String>>(&mut self, total: usize, label: S) -> Bar {
+        let width = (self.width.unwrap_or(100) / 2) - 7;
+        let label: String = label.into();
 
         // An initial "empty" rendering of the new bar.
-        println!("{:<l$} [{:->f$}]   0%", label, l = width - 9, f = width);
+        println!("{:<l$} [{:->f$}]   0%", label, l = width + 6, f = width);
 
         let curr = 0;
-        let bar = SubBar { curr, total, label };
+        let bar = SubBar {
+            curr,
+            total,
+            label,
+            cancelled: false,
+        };
         self.bars.push(bar);
         Bar(self.bars.len() - 1)
     }
@@ -156,7 +161,16 @@ impl Progress {
             let pos = self.bars.len() - bar.0;
             let w = (term_width / 2) - 7;
 
-            if b.curr >= b.total {
+            if b.cancelled {
+                print!(
+                    "\x1B[s\x1B[{}A\r{:<l$} [{:_>f$}] ???%\x1B[u\r",
+                    pos,
+                    b.label,
+                    "",
+                    l = term_width - w - 8,
+                    f = w,
+                )
+            } else if b.curr >= b.total {
                 print!(
                     "\x1B[s\x1B[{}A\r{:<l$} [{:#>f$}] 100%\x1B[u\r",
                     pos,
@@ -211,6 +225,17 @@ impl Progress {
         let b = &self.bars[bar.0];
         b.curr >= b.total
     }
+
+    /// Cancel the given bar, say in the case of download failure, etc.
+    ///
+    /// This fills the bar with the "cancel" character.
+    pub fn cancel(&mut self, bar: &Bar) {
+        {
+            let mut b = &mut self.bars[bar.0];
+            b.cancelled = true;
+        }
+        self.set_and_draw(bar, self.bars[bar.0].total);
+    }
 }
 
 struct SubBar {
@@ -218,6 +243,7 @@ struct SubBar {
     curr: usize,
     total: usize,
     label: String,
+    cancelled: bool,
 }
 
 /// A progress bar index for use with [`Progress`].
