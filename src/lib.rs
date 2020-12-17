@@ -160,23 +160,28 @@ impl Progress {
             let b = &self.bars[bar.0];
             let pos = self.bars.len() - bar.0;
             let w = (term_width / 2) - 7;
+            let (data, unit) = data(b.curr);
 
             if b.cancelled {
                 print!(
-                    "\x1B[s\x1B[{}A\r{:<l$} [{:_>f$}] ???%\x1B[u\r",
+                    "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:_>f$}] ???%\x1B[u\r",
                     pos,
                     b.label,
+                    data,
+                    unit,
                     "",
-                    l = term_width - w - 8,
+                    l = term_width - w - 8 - 5,
                     f = w,
                 )
             } else if b.curr >= b.total {
                 print!(
-                    "\x1B[s\x1B[{}A\r{:<l$} [{:#>f$}] 100%\x1B[u\r",
+                    "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}] 100%\x1B[u\r",
                     pos,
                     b.label,
+                    data,
+                    unit,
                     "",
-                    l = term_width - w - 8,
+                    l = term_width - w - 8 - 5,
                     f = w,
                 )
             } else {
@@ -185,14 +190,16 @@ impl Progress {
                 let pos = self.bars.len() - bar.0;
 
                 print!(
-                    "\x1B[s\x1B[{}A\r{:<l$} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
+                    "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
                     pos,
                     b.label,
+                    data,
+                    unit,
                     "",
                     '>',
                     "",
                     100 * b.curr / b.total,
-                    l = term_width - w - 8,
+                    l = term_width - w - 8 - 5,
                     f = f,
                     e = e
                 );
@@ -262,3 +269,12 @@ struct SubBar {
 ///
 /// As shown above, this type can only be constructed via [`Progress::bar`].
 pub struct Bar(usize);
+
+fn data(curr: usize) -> (usize, char) {
+    match curr {
+        _ if curr >= 1_000_000_000 => (curr / 1_000_000_000, 'G'),
+        _ if curr >= 1_000_000 => (curr / 1_000_000, 'M'),
+        _ if curr >= 1000 => (curr / 1000, 'K'),
+        _ => (curr, ' '),
+    }
+}
