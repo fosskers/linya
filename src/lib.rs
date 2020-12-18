@@ -4,10 +4,10 @@
 //!
 //! - Intuitive API.
 //! - First-class support for `rayon`, etc.
-//! - Efficient, no-allocation redraws.
+//! - Efficient, allocation-free redraws.
 //! - Addition of new subbars on-the-fly.
 //! - Single-threaded multi-bars.
-//! - Light-weight.
+//! - Light-weight, only a single dependency.
 //!
 //! # Usage
 //!
@@ -65,16 +65,21 @@
 //!
 //! In this way, you could even have multi-bars in a single-threaded context.
 //!
-//! ## Styling
-//!
 //! # Caveats
+//!
+//! Some of the points below may be fixed in future releases.
 //!
 //! - Your terminal must support ANSI codes.
 //! - No dedicated render thread, to keep usage simple.
 //! - No bar templating, to avoid dependencies.
+//! - No other bar styling ([yet]).
 //! - No "rates", since rerenders are not time-based.
+//! - No bar clearing after completion.
 //! - No spinners, also due to no sense of time.
 //! - No dynamic resizing of bars if window size changes.
+//!
+//! If you need more customizable progress bars and are willing to accept
+//! heavier dependencies, please consider [indicatif].
 //!
 //! # Trivia
 //!
@@ -82,14 +87,13 @@
 //!
 //! [mirrormere]: https://www.tednasmith.com/tolkien/durins-crown-and-the-mirrormere/
 //! [arcmutex]: https://doc.rust-lang.org/stable/book/ch16-03-shared-state.html?#atomic-reference-counting-with-arct
+//! [yet]: https://internals.rust-lang.org/t/fmt-dynamic-fill-character/13609
+//! [indicatif]: https://lib.rs/crates/indicatif
 
 #![warn(missing_docs)]
 
 use std::io::{Stdout, Write};
 use terminal_size::{terminal_size, Width};
-
-// - Replicate ILoveCandy
-// - Show example usage with `curl`
 
 /// A progress bar "coordinator" to share between threads.
 pub struct Progress {
@@ -151,8 +155,9 @@ impl Progress {
 
     /// Force the drawing of a particular [`Bar`].
     ///
-    /// **Note 1:** Drawing will only occur if there is something to show. Namely,
-    /// if the progress bar should advance by at least one visible "tick".
+    /// **Note 1:** Drawing will only occur if there is something meaningful to
+    /// show. Namely, if the progress has advanced at least 1% since the last
+    /// draw.
     ///
     /// **Note 2:** If your program is not being run in a terminal, an initial
     /// empty bar will be printed but never refreshed.
