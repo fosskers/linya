@@ -83,6 +83,8 @@
 //! [mirrormere]: https://www.tednasmith.com/tolkien/durins-crown-and-the-mirrormere/
 //! [arcmutex]: https://doc.rust-lang.org/stable/book/ch16-03-shared-state.html?#atomic-reference-counting-with-arct
 
+#![warn(missing_docs)]
+
 use std::io::{Stdout, Write};
 use terminal_size::{terminal_size, Width};
 
@@ -161,7 +163,7 @@ impl Progress {
             let pos = self.bars.len() - bar.0;
             let mut b = &mut self.bars[bar.0];
             let w = (term_width / 2) - 7;
-            let (data, unit) = data(b.curr);
+            let (data, unit) = denomination(b.curr);
             let diff = 100 * (b.curr - b.prev) / b.total;
 
             if b.cancelled {
@@ -250,11 +252,17 @@ impl Progress {
     }
 }
 
+/// An internal structure that stores individual bar state.
 struct SubBar {
+    /// Progress as of the previous draw.
     prev: usize,
+    /// Current progress.
     curr: usize,
+    /// The progress target.
     total: usize,
+    /// A user-supplied label for the left side of the bar line.
     label: String,
+    /// Did the user force this bar to stop?
     cancelled: bool,
 }
 
@@ -274,7 +282,8 @@ struct SubBar {
 /// As shown above, this type can only be constructed via [`Progress::bar`].
 pub struct Bar(usize);
 
-fn data(curr: usize) -> (usize, char) {
+/// Reduce some raw byte count into a more human-readable form.
+fn denomination(curr: usize) -> (usize, char) {
     match curr {
         _ if curr >= 1_000_000_000 => (curr / 1_000_000_000, 'G'),
         _ if curr >= 1_000_000 => (curr / 1_000_000, 'M'),
