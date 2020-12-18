@@ -162,7 +162,7 @@ impl Progress {
             let mut b = &mut self.bars[bar.0];
             let w = (term_width / 2) - 7;
             let (data, unit) = data(b.curr);
-            let perc = 100 * b.curr / b.total;
+            let diff = 100 * (b.curr - b.prev) / b.total;
 
             if b.cancelled {
                 print!(
@@ -190,7 +190,7 @@ impl Progress {
                     f = w,
                 );
                 self.out.flush().unwrap();
-            } else if perc >= 1 {
+            } else if diff >= 1 {
                 b.prev = b.curr;
                 let f = (w * b.curr / b.total).min(w - 1);
                 let e = (w - 1) - f;
@@ -204,7 +204,7 @@ impl Progress {
                     "",
                     '>',
                     "",
-                    perc,
+                    100 * b.curr / b.total,
                     l = term_width - w - 8 - 5,
                     f = f,
                     e = e
