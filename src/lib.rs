@@ -128,11 +128,12 @@ impl Progress {
         let label: String = label.into();
 
         // An initial "empty" rendering of the new bar.
-        println!("{:<l$} [{:->f$}]   0%", label, l = width + 6, f = width);
+        println!("{:<l$} [{:->f$}]   0%", label, "", l = width + 6, f = width);
+        self.out.flush().unwrap();
 
-        let curr = 0;
         let bar = SubBar {
-            curr,
+            curr: 0,
+            prev: 0,
             total,
             label,
             cancelled: false,
@@ -157,10 +158,11 @@ impl Progress {
         // If there is no legal width value present, that means we aren't
         // running in a terminal, and no rerendering can be done.
         if let Some(term_width) = self.width {
-            let b = &self.bars[bar.0];
             let pos = self.bars.len() - bar.0;
+            let mut b = &mut self.bars[bar.0];
             let w = (term_width / 2) - 7;
             let (data, unit) = data(b.curr);
+            let perc = 100 * b.curr / b.total;
 
             if b.cancelled {
                 print!(
@@ -172,7 +174,10 @@ impl Progress {
                     "",
                     l = term_width - w - 8 - 5,
                     f = w,
-                )
+                );
+
+                // Very important, or the output won't appear fluid.
+                self.out.flush().unwrap();
             } else if b.curr >= b.total {
                 print!(
                     "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}] 100%\x1B[u\r",
@@ -183,11 +188,12 @@ impl Progress {
                     "",
                     l = term_width - w - 8 - 5,
                     f = w,
-                )
-            } else {
+                );
+                self.out.flush().unwrap();
+            } else if perc >= 1 {
+                b.prev = b.curr;
                 let f = (w * b.curr / b.total).min(w - 1);
                 let e = (w - 1) - f;
-                let pos = self.bars.len() - bar.0;
 
                 print!(
                     "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
@@ -198,15 +204,13 @@ impl Progress {
                     "",
                     '>',
                     "",
-                    100 * b.curr / b.total,
+                    perc,
                     l = term_width - w - 8 - 5,
                     f = f,
                     e = e
                 );
+                self.out.flush().unwrap();
             }
-
-            // Very important, or the output won't appear fluid.
-            self.out.flush().unwrap();
         }
     }
 
@@ -247,7 +251,7 @@ impl Progress {
 }
 
 struct SubBar {
-    // prev: usize,
+    prev: usize,
     curr: usize,
     total: usize,
     label: String,
