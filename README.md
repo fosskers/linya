@@ -1,6 +1,7 @@
-[![Workflow Status](https://github.com/fosskers/linya/workflows/Tests/badge.svg)](https://github.com/fosskers/linya/actions?query=workflow%3A%22Tests%22)
-
 # linya
+
+[![Workflow Status](https://github.com/fosskers/linya/workflows/Tests/badge.svg)](https://github.com/fosskers/linya/actions?query=workflow%3A%22Tests%22)
+[![](https://img.shields.io/crates/v/linya.svg)](https://crates.io/crates/linya)
 
 Simple concurrent progress bars.
 
