@@ -97,6 +97,7 @@ use std::io::{Stdout, Write};
 use terminal_size::{terminal_size, Height, Width};
 
 /// A progress bar "coordinator" to share between threads.
+#[derive(Debug)]
 pub struct Progress {
     /// The drawable bars themselves.
     bars: Vec<SubBar>,
@@ -271,6 +272,7 @@ impl Progress {
 }
 
 /// An internal structure that stores individual bar state.
+#[derive(Debug)]
 struct SubBar {
     /// Progress as of the previous draw.
     prev: usize,
@@ -298,6 +300,7 @@ struct SubBar {
 /// ```
 ///
 /// As shown above, this type can only be constructed via [`Progress::bar`].
+#[derive(Debug)]
 pub struct Bar(usize);
 
 /// Reduce some raw byte count into a more human-readable form.
