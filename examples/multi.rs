@@ -26,7 +26,7 @@ fn main() {
             .bar(BAR_MAX, format!("Downloading #{}", n));
 
         // Determine how fast our thread progresses.
-        let wait = rand::thread_rng().gen_range(1, 10);
+        let wait = rand::thread_rng().gen_range(1..=10);
 
         for n in 0..=BAR_MAX {
             // Only draws the line of the specified `Bar` without wasting

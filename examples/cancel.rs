@@ -17,11 +17,11 @@ fn main() {
         let bar: Bar = p.lock().unwrap().bar(50, format!("Downloading #{}", n));
 
         let mut rng = rand::thread_rng();
-        let wait = rng.gen_range(25, 250);
+        let wait = rng.gen_range(25..250);
 
         for n in 0..=50 {
             // Simulate our "download" failing.
-            let it_failed = rng.gen_range(0, 99) < 10;
+            let it_failed = rng.gen_range(0..=99) < 10;
             if it_failed {
                 p.lock().unwrap().cancel(bar);
                 break;
