@@ -93,7 +93,7 @@
 #![warn(missing_docs)]
 
 use std::io::{Stdout, Write};
-use terminal_size::{terminal_size, Width};
+use terminal_size::{terminal_size, Height, Width};
 
 /// A progress bar "coordinator" to share between threads.
 pub struct Progress {
@@ -101,8 +101,8 @@ pub struct Progress {
     bars: Vec<SubBar>,
     /// A shared handle to `Stdout`, for buffer flushing.
     out: Stdout,
-    /// Terminal width.
-    width: Option<usize>,
+    /// Terminal width and height.
+    size: Option<(usize, usize)>,
 }
 
 impl Progress {
@@ -110,16 +110,16 @@ impl Progress {
     pub fn new() -> Progress {
         let out = std::io::stdout();
         let bars = vec![];
-        let width = terminal_size().map(|(Width(w), _)| w as usize);
-        Progress { bars, out, width }
+        let size = terminal_size().map(|(Width(w), Height(h))| (w as usize, h as usize));
+        Progress { bars, out, size }
     }
 
     /// Like [`Progress::new`] but accepts a size hint to avoid reallocation as bar count grows.
     pub fn with_capacity(capacity: usize) -> Progress {
         let out = std::io::stdout();
         let bars = Vec::with_capacity(capacity);
-        let width = terminal_size().map(|(Width(w), _)| w as usize);
-        Progress { bars, out, width }
+        let size = terminal_size().map(|(Width(w), Height(h))| (w as usize, h as usize));
+        Progress { bars, out, size }
     }
 
     /// Create a new progress bar with default styling and receive an owned
@@ -130,7 +130,7 @@ impl Progress {
     /// Passing `0` to this function will cause a panic the first time a draw is
     /// attempted.
     pub fn bar<S: Into<String>>(&mut self, total: usize, label: S) -> Bar {
-        let width = (self.width.unwrap_or(100) / 2) - 7;
+        let width = (self.size.map(|(w, _)| w).unwrap_or(100) / 2) - 7;
         let label: String = label.into();
 
         // An initial "empty" rendering of the new bar.
@@ -164,59 +164,64 @@ impl Progress {
     pub fn draw(&mut self, bar: &Bar) {
         // If there is no legal width value present, that means we aren't
         // running in a terminal, and no rerendering can be done.
-        if let Some(term_width) = self.width {
+        if let Some((term_width, term_height)) = self.size {
             let pos = self.bars.len() - bar.0;
-            let mut b = &mut self.bars[bar.0];
-            let w = (term_width / 2) - 7;
-            let (data, unit) = denomination(b.curr);
-            let diff = 100 * (b.curr - b.prev) / b.total;
 
-            if b.cancelled {
-                print!(
-                    "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:_>f$}] ???%\x1B[u\r",
-                    pos,
-                    b.label,
-                    data,
-                    unit,
-                    "",
-                    l = term_width - w - 8 - 5,
-                    f = w,
-                );
+            // For now, if the progress for a particular bar is slow and drifts
+            // past the top of the terminal, redrawing is paused.
+            if pos < term_height {
+                let mut b = &mut self.bars[bar.0];
+                let w = (term_width / 2) - 7;
+                let (data, unit) = denomination(b.curr);
+                let diff = 100 * (b.curr - b.prev) / b.total;
 
-                // Very important, or the output won't appear fluid.
-                self.out.flush().unwrap();
-            } else if b.curr >= b.total {
-                print!(
-                    "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}] 100%\x1B[u\r",
-                    pos,
-                    b.label,
-                    data,
-                    unit,
-                    "",
-                    l = term_width - w - 8 - 5,
-                    f = w,
-                );
-                self.out.flush().unwrap();
-            } else if diff >= 1 {
-                b.prev = b.curr;
-                let f = (w * b.curr / b.total).min(w - 1);
-                let e = (w - 1) - f;
+                if b.cancelled {
+                    print!(
+                        "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:_>f$}] ???%\x1B[u\r",
+                        pos,
+                        b.label,
+                        data,
+                        unit,
+                        "",
+                        l = term_width - w - 8 - 5,
+                        f = w,
+                    );
 
-                print!(
-                    "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
-                    pos,
-                    b.label,
-                    data,
-                    unit,
-                    "",
-                    '>',
-                    "",
-                    100 * b.curr / b.total,
-                    l = term_width - w - 8 - 5,
-                    f = f,
-                    e = e
-                );
-                self.out.flush().unwrap();
+                    // Very important, or the output won't appear fluid.
+                    self.out.flush().unwrap();
+                } else if b.curr >= b.total {
+                    print!(
+                        "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}] 100%\x1B[u\r",
+                        pos,
+                        b.label,
+                        data,
+                        unit,
+                        "",
+                        l = term_width - w - 8 - 5,
+                        f = w,
+                    );
+                    self.out.flush().unwrap();
+                } else if diff >= 1 {
+                    b.prev = b.curr;
+                    let f = (w * b.curr / b.total).min(w - 1);
+                    let e = (w - 1) - f;
+
+                    print!(
+                        "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
+                        pos,
+                        b.label,
+                        data,
+                        unit,
+                        "",
+                        '>',
+                        "",
+                        100 * b.curr / b.total,
+                        l = term_width - w - 8 - 5,
+                        f = f,
+                        e = e
+                    );
+                    self.out.flush().unwrap();
+                }
             }
         }
     }

@@ -17,7 +17,7 @@ fn main() -> Result<(), curl::Error> {
     handle.progress(true)?;
 
     // `progress_function` has aggressive lifetimes and requires the mutable
-    // `progress` to be moved.
+    // `progress` to be explicitly moved.
     handle.progress_function(move |_, downloaded, _, _| {
         progress.set_and_draw(&bar, downloaded as usize);
         true
