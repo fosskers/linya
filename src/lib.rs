@@ -130,11 +130,18 @@ impl Progress {
     /// Passing `0` to this function will cause a panic the first time a draw is
     /// attempted.
     pub fn bar<S: Into<String>>(&mut self, total: usize, label: S) -> Bar {
-        let width = (self.size.map(|(w, _)| w).unwrap_or(100) / 2) - 7;
+        let twidth = self.size.map(|(w, _)| w).unwrap_or(100);
+        let w = (twidth / 2) - 7;
         let label: String = label.into();
 
         // An initial "empty" rendering of the new bar.
-        println!("{:<l$} [{:->f$}]   0%", label, "", l = width + 6, f = width);
+        println!(
+            "{:<l$}      [{:->f$}]   0%",
+            label,
+            "",
+            l = twidth - w - 8 - 5,
+            f = w
+        );
         self.out.flush().unwrap();
 
         let bar = SubBar {
