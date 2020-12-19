@@ -4,7 +4,7 @@
 
 Simple concurrent progress bars.
 
-![](screenshots/multi.gif)
+![](https://github.com/fosskers/linya/blob/master/screenshots/multi.gif?raw=true)
 
 ## Features
 
