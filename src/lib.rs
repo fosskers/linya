@@ -95,7 +95,7 @@
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/linya/0.1.0")]
 
-use std::io::{Stdout, Write};
+use std::io::{LineWriter, Stderr, Write};
 use terminal_size::{terminal_size, Height, Width};
 
 /// A progress bar "coordinator" to share between threads.
@@ -103,8 +103,10 @@ use terminal_size::{terminal_size, Height, Width};
 pub struct Progress {
     /// The drawable bars themselves.
     bars: Vec<SubBar>,
-    /// A shared handle to `Stdout`, for buffer flushing.
-    out: Stdout,
+    /// A shared handle to `Stderr`.
+    ///
+    /// Line-buffered so that the cursor doesn't jump around unpleasantly.
+    out: LineWriter<Stderr>,
     /// Terminal width and height.
     size: Option<(usize, usize)>,
 }
@@ -112,7 +114,7 @@ pub struct Progress {
 impl Progress {
     /// Initialize a new progress bar coordinator.
     pub fn new() -> Progress {
-        let out = std::io::stdout();
+        let out = LineWriter::new(std::io::stderr());
         let bars = vec![];
         let size = terminal_size().map(|(Width(w), Height(h))| (w as usize, h as usize));
         Progress { bars, out, size }
@@ -120,7 +122,7 @@ impl Progress {
 
     /// Like [`Progress::new`] but accepts a size hint to avoid reallocation as bar count grows.
     pub fn with_capacity(capacity: usize) -> Progress {
-        let out = std::io::stdout();
+        let out = LineWriter::new(std::io::stderr());
         let bars = Vec::with_capacity(capacity);
         let size = terminal_size().map(|(Width(w), Height(h))| (w as usize, h as usize));
         Progress { bars, out, size }
@@ -139,14 +141,15 @@ impl Progress {
         let label: String = label.into();
 
         // An initial "empty" rendering of the new bar.
-        println!(
+        writeln!(
+            &mut self.out,
             "{:<l$}      [{:->f$}]   0%",
             label,
             "",
             l = twidth - w - 8 - 5,
             f = w
-        );
-        self.out.flush().unwrap();
+        )
+        .unwrap();
 
         let bar = SubBar {
             curr: 0,
@@ -187,7 +190,8 @@ impl Progress {
                 let diff = 100 * (b.curr - b.prev) / b.total;
 
                 if b.cancelled {
-                    print!(
+                    write!(
+                        &mut self.out,
                         "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:_>f$}] ???%\x1B[u\r",
                         pos,
                         b.label,
@@ -196,12 +200,14 @@ impl Progress {
                         "",
                         l = term_width - w - 8 - 5,
                         f = w,
-                    );
+                    )
+                    .unwrap();
 
                     // Very important, or the output won't appear fluid.
                     self.out.flush().unwrap();
                 } else if b.curr >= b.total {
-                    print!(
+                    write!(
+                        &mut self.out,
                         "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}] 100%\x1B[u\r",
                         pos,
                         b.label,
@@ -210,14 +216,16 @@ impl Progress {
                         "",
                         l = term_width - w - 8 - 5,
                         f = w,
-                    );
+                    )
+                    .unwrap();
                     self.out.flush().unwrap();
                 } else if diff >= 1 {
                     b.prev = b.curr;
                     let f = (w * b.curr / b.total).min(w - 1);
                     let e = (w - 1) - f;
 
-                    print!(
+                    write!(
+                        &mut self.out,
                         "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
                         pos,
                         b.label,
@@ -230,7 +238,8 @@ impl Progress {
                         l = term_width - w - 8 - 5,
                         f = f,
                         e = e
-                    );
+                    )
+                    .unwrap();
                     self.out.flush().unwrap();
                 }
             }

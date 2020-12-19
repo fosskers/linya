@@ -7,7 +7,7 @@ use std::time::Duration;
 const BAR_MAX: usize = 1234;
 
 fn main() {
-    println!("Starting bars...");
+    eprintln!("Starting bars...");
 
     // `Progress` on its own can't be passed between threads, so we wrap it in
     // the usual sharing types.
@@ -37,5 +37,5 @@ fn main() {
         }
     });
 
-    println!("Complete!");
+    eprintln!("Complete!");
 }

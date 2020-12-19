@@ -2,7 +2,7 @@ use linya::{Bar, Progress};
 use std::time::Duration;
 
 fn main() {
-    println!("Starting bar...");
+    eprintln!("Starting bar...");
 
     // `Progress` is not a bar, but a "bar coordinator".
     let mut progress = Progress::new();
@@ -18,5 +18,5 @@ fn main() {
         std::thread::sleep(Duration::from_millis(60));
     }
 
-    println!("Complete!");
+    eprintln!("Complete!");
 }

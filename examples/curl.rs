@@ -2,7 +2,7 @@ use curl::easy::Easy;
 use linya::{Bar, Progress};
 
 fn main() -> Result<(), curl::Error> {
-    println!("Starting tarball download...");
+    eprintln!("Starting tarball download...");
 
     let url = "";
     let mut progress = Progress::new();
@@ -28,6 +28,6 @@ fn main() -> Result<(), curl::Error> {
     // `write_function`.
     handle.perform()?;
 
-    println!("Complete!");
+    eprintln!("Complete!");
     Ok(())
 }
