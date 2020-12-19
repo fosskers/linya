@@ -24,9 +24,8 @@ libraries, has no separate type for individual bars. Instead, we use the
 
 ### Multi Bars
 
-`Progress` does not implement `Clone`, `Send`, or `Sync`, and so must be wrapped
-in the usual [concurrent sharing types][arcmutex] before being passed between
-threads:
+`Progress` does not implement `Clone` and must be wrapped in the usual
+[concurrent sharing types][arcmutex] before being passed between threads:
 
 ```rust
 use std::sync::{Arc, Mutex};
@@ -87,6 +86,9 @@ Some of the points below may be fixed in future releases.
 
 If you need more customizable progress bars and are willing to accept
 heavier dependencies, please consider [indicatif].
+
+Note also that using more than one `Progress` at the same time leads to
+unspecified behaviour.
 
 ## Trivia
 
