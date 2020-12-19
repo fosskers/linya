@@ -10,6 +10,7 @@ readme = "README.md"
 license = "MIT"
 keywords = ["cli", "progress", "bar"]
 categories = ["command-line-interface"]
+exclude = ["screenshots/*"]
 
 [badges]
 github = { repository = "fosskers/linya", branch = "master", workflow = "Tests" }

@@ -4,6 +4,8 @@
 
 Simple concurrent progress bars.
 
+![](screenshots/multi.gif)
+
 ## Features
 
 - Intuitive API.
