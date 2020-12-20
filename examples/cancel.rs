@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 fn main() {
-    eprintln!("Starting bars...");
+    println!("Starting bars...");
 
     let progress = Arc::new(Mutex::new(Progress::new()));
 
@@ -32,5 +32,5 @@ fn main() {
         }
     });
 
-    eprintln!("Complete!");
+    println!("Complete!");
 }
