@@ -93,7 +93,7 @@
 //! [indicatif]: https://lib.rs/crates/indicatif
 
 #![warn(missing_docs)]
-#![doc(html_root_url = "https://docs.rs/linya/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/linya/0.1.1")]
 
 use std::io::{LineWriter, Stderr, Write};
 use terminal_size::{terminal_size, Height, Width};
