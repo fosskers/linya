@@ -1,5 +1,12 @@
 # `linya` Changelog
 
+## 0.1.2 (2021-05-27)
+
+#### Added
+
+- A `Default` instance for `Progress`.
+- A proper LICENSE file.
+
 ## 0.1.1 (2020-12-19)
 
 #### Changed

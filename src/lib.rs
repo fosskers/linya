@@ -93,7 +93,7 @@
 //! [indicatif]: https://lib.rs/crates/indicatif
 
 #![warn(missing_docs)]
-#![doc(html_root_url = "https://docs.rs/linya/0.1.1")]
+#![doc(html_root_url = "https://docs.rs/linya/0.1.2")]
 
 use std::io::{LineWriter, Stderr, Write};
 use terminal_size::{terminal_size, Height, Width};
@@ -109,6 +109,12 @@ pub struct Progress {
     out: LineWriter<Stderr>,
     /// Terminal width and height.
     size: Option<(usize, usize)>,
+}
+
+impl Default for Progress {
+    fn default() -> Progress {
+        Progress::new()
+    }
 }
 
 impl Progress {
@@ -226,13 +232,12 @@ impl Progress {
 
                     write!(
                         &mut self.out,
-                        "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}{}{:->e$}] {:3}%\x1B[u\r",
+                        "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}>{:->e$}] {:3}%\x1B[u\r",
                         pos,
                         b.label,
                         data,
                         unit,
                         "",
-                        '>',
                         "",
                         100 * b.curr / b.total,
                         l = term_width - w - 8 - 5,
