@@ -17,26 +17,27 @@
 //!
 //! ## Multi Bars
 //!
-//! `Progress` does not implement [`Clone`] and must be wrapped in the usual
-//! [concurrent sharing types][arcmutex] before being passed between threads:
+//! To mutably access a [`Progress`] across threads it must be wrapped in the
+//! usual [concurrent sharing types][arcmutex]. With `rayon` specifically, only
+//! `Mutex` is necessary:
 //!
 //! ```
-//! use std::sync::{Arc, Mutex};
+//! use std::sync::Mutex;
 //! use linya::{Bar, Progress};
 //! use rayon::prelude::*;
 //!
-//! let progress = Arc::new(Mutex::new(Progress::new()));
+//! let progress = Mutex::new(Progress::new());
 //!
 //! // `into_par_iter()` is from `rayon`, and lets us parallelize some
 //! // operation over a collection "for free".
-//! (0..10).into_par_iter().for_each_with(progress, |p, n| {
-//!   let bar: Bar = p.lock().unwrap().bar(50, format!("Downloading {}", n));
+//! (0..10).into_par_iter().for_each(|n| {
+//!   let bar: Bar = progress.lock().unwrap().bar(50, format!("Downloading {}", n));
 //!
 //!   // ... Your logic ...
 //!
 //!   // Increment the bar and draw it immediately.
 //!   // This is likely called in some inner loop or other closure.
-//!   p.lock().unwrap().inc_and_draw(&bar, 10);
+//!   progress.lock().unwrap().inc_and_draw(&bar, 10);
 //! });
 //! ```
 //!
