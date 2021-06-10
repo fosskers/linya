@@ -1,5 +1,15 @@
 # `linya` Changelog
 
+## Unreleased
+
+#### Changed
+
+- Removed `Arc` usage in Rayon examples.
+
+#### Fixed
+
+- A rare panic under a very specific shell piping situation.
+
 ## 0.2.0 (2021-05-27)
 
 #### Added
