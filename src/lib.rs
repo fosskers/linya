@@ -117,6 +117,10 @@ impl Default for Progress {
     }
 }
 
+// You will notice in a number of the methods below that `Result` values from
+// calling `write!` are being ignored via a `let _ = ...` pattern, as opposed to
+// unwrapping. This avoids a rare panic that can occur under very specific shell
+// piping scenarios.
 impl Progress {
     /// Initialize a new progress bar coordinator.
     pub fn new() -> Progress {
@@ -147,15 +151,14 @@ impl Progress {
         let label: String = label.into();
 
         // An initial "empty" rendering of the new bar.
-        writeln!(
+        let _ = writeln!(
             &mut self.out,
             "{:<l$}      [{:->f$}]   0%",
             label,
             "",
             l = twidth - w - 8 - 5,
             f = w
-        )
-        .unwrap();
+        );
 
         let bar = SubBar {
             curr: 0,
@@ -196,7 +199,7 @@ impl Progress {
                 let diff = 100 * (b.curr - b.prev) / b.total;
 
                 if b.cancelled {
-                    write!(
+                    let _ = write!(
                         &mut self.out,
                         "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:_>f$}] ???%\x1B[u\r",
                         pos,
@@ -206,13 +209,12 @@ impl Progress {
                         "",
                         l = term_width - w - 8 - 5,
                         f = w,
-                    )
-                    .unwrap();
+                    );
 
                     // Very important, or the output won't appear fluid.
-                    self.out.flush().unwrap();
+                    let _ = self.out.flush();
                 } else if b.curr >= b.total {
-                    write!(
+                    let _ = write!(
                         &mut self.out,
                         "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}] 100%\x1B[u\r",
                         pos,
@@ -222,15 +224,14 @@ impl Progress {
                         "",
                         l = term_width - w - 8 - 5,
                         f = w,
-                    )
-                    .unwrap();
-                    self.out.flush().unwrap();
+                    );
+                    let _ = self.out.flush();
                 } else if diff >= 1 {
                     b.prev = b.curr;
                     let f = (w * b.curr / b.total).min(w - 1);
                     let e = (w - 1) - f;
 
-                    write!(
+                    let _ = write!(
                         &mut self.out,
                         "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}>{:->e$}] {:3}%\x1B[u\r",
                         pos,
@@ -243,9 +244,8 @@ impl Progress {
                         l = term_width - w - 8 - 5,
                         f = f,
                         e = e
-                    )
-                    .unwrap();
-                    self.out.flush().unwrap();
+                    );
+                    let _ = self.out.flush();
                 }
             }
         }
