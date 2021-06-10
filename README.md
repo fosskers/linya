@@ -49,10 +49,10 @@ let progress = Mutex::new(Progress::new());
 ```
 
 Notice that new bars are added on-the-fly from within forked threads. We
-call [`Progress::bar`] to obtain a new "bar handle", and then pass that
+call `Progress::bar` to obtain a new "bar handle", and then pass that
 handle back to the parent `Progress` when incrementing/drawing.
 
-See [`Progress::inc_and_draw`] and [`Progress::set_and_draw`] to advance and
+See `Progress::inc_and_draw` and `Progress::set_and_draw` to advance and
 render the bars.
 
 ### Single Bars
