@@ -24,34 +24,35 @@ libraries, has no separate type for individual bars. Instead, we use the
 
 ### Multi Bars
 
-`Progress` does not implement `Clone` and must be wrapped in the usual
-[concurrent sharing types][arcmutex] before being passed between threads:
+To mutably access a `Progress` across threads it must be wrapped in the
+usual [concurrent sharing types][arcmutex]. With `rayon` specifically, only
+`Mutex` is necessary:
 
 ```rust
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use linya::{Bar, Progress};
 use rayon::prelude::*;
 
-let progress = Arc::new(Mutex::new(Progress::new()));
+let progress = Mutex::new(Progress::new());
 
 // `into_par_iter()` is from `rayon`, and lets us parallelize some
 // operation over a collection "for free".
-(0..10).into_par_iter().for_each_with(progress, |p, n| {
-  let bar: Bar = p.lock().unwrap().bar(50, format!("Downloading {}", n));
+(0..10).into_par_iter().for_each(|n| {
+  let bar: Bar = progress.lock().unwrap().bar(50, format!("Downloading {}", n));
 
   // ... Your logic ...
 
   // Increment the bar and draw it immediately.
   // This is likely called in some inner loop or other closure.
-  p.lock().unwrap().inc_and_draw(&bar, 10);
+  progress.lock().unwrap().inc_and_draw(&bar, 10);
 });
 ```
 
 Notice that new bars are added on-the-fly from within forked threads. We
-call `Progress::bar` to obtain a new "bar handle", and then pass that
+call [`Progress::bar`] to obtain a new "bar handle", and then pass that
 handle back to the parent `Progress` when incrementing/drawing.
 
-See `Progress::inc_and_draw` and `Progress::set_and_draw` to advance and
+See [`Progress::inc_and_draw`] and [`Progress::set_and_draw`] to advance and
 render the bars.
 
 ### Single Bars
@@ -92,7 +93,7 @@ unspecified behaviour.
 
 ## Trivia
 
-*Linya* is the Quenya word for "pool", as in a [beautiful mountain pool][mirrormere].
+_Linya_ is the Quenya word for "pool", as in a [beautiful mountain pool][mirrormere].
 
 [mirrormere]: https://www.tednasmith.com/tolkien/durins-crown-and-the-mirrormere/
 [arcmutex]: https://doc.rust-lang.org/stable/book/ch16-03-shared-state.html?#atomic-reference-counting-with-arct
