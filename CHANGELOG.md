@@ -1,6 +1,10 @@
 # `linya` Changelog
 
-## Unreleased
+## 0.2.1 (2021-06-12)
+
+#### Added
+
+- An example of how to use Linya without Rayon.
 
 #### Changed
 
