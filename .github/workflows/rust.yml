@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
 
 env:
@@ -10,12 +10,9 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build
-    - name: Run tests
-      run: cargo test
+      - uses: actions/checkout@v2
+      - name: Run tests
+        run: cargo test --examples
