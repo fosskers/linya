@@ -229,7 +229,7 @@ impl Progress {
                     let _ = self.out.flush();
                 } else if diff >= 1 {
                     b.prev = b.curr;
-                    let f = (w * (b.curr / b.total)).min(w - 1);
+                    let f = (((w as u64) * (b.curr as u64) / (b.total as u64)) as usize).min(w - 1);
                     let e = (w - 1) - f;
 
                     let _ = write!(
@@ -241,7 +241,7 @@ impl Progress {
                         unit,
                         "",
                         "",
-                        100 * (b.curr / b.total),
+                        100 * (b.curr as u64) / (b.total as u64),
                         l = term_width - w - 8 - 5,
                         f = f,
                         e = e
