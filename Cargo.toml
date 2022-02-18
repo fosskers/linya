@@ -2,7 +2,7 @@
 name = "linya"
 version = "0.2.1"
 authors = ["Colin Woodbury <colin@fosskers.ca>"]
-edition = "2018"
+edition = "2021"
 description = "Simple concurrent progress bars."
 homepage = "https://github.com/fosskers/linya"
 repository = "https://github.com/fosskers/linya"
