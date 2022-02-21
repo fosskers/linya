@@ -197,7 +197,7 @@ impl Progress {
                 let mut b = &mut self.bars[bar.0];
                 let w = (term_width / 2) - 7;
                 let (data, unit) = denomination(b.curr);
-                let diff = 100 * ((b.curr - b.prev) / b.total);
+                let diff = 100 * ((b.curr - b.prev) as u64 / (b.total as u64));
 
                 if b.cancelled {
                     let _ = write!(
