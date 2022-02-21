@@ -1,5 +1,11 @@
 # `linya` Changelog
 
+## 0.2.2 (2022-02-21)
+
+#### Fixed
+
+- An overflow panic that affected certain hardware with a comparatively small `usize::MAX`.
+
 ## 0.2.1 (2021-06-12)
 
 #### Added
