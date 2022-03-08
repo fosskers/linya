@@ -94,9 +94,10 @@
 //! [indicatif]: https://lib.rs/crates/indicatif
 
 #![warn(missing_docs)]
-#![doc(html_root_url = "https://docs.rs/linya/0.2.2")]
+#![doc(html_root_url = "https://docs.rs/linya/0.3.0")]
 
-use std::io::{LineWriter, Stderr, Write};
+use std::fmt;
+use std::io::{BufWriter, Stderr, Write};
 use terminal_size::{terminal_size, Height, Width};
 
 /// A progress bar "coordinator" to share between threads.
@@ -106,8 +107,8 @@ pub struct Progress {
     bars: Vec<SubBar>,
     /// A shared handle to `Stderr`.
     ///
-    /// Line-buffered so that the cursor doesn't jump around unpleasantly.
-    out: LineWriter<Stderr>,
+    /// Buffered so that the cursor doesn't jump around unpleasantly.
+    out: BufWriter<Stderr>,
     /// Terminal width and height.
     size: Option<(usize, usize)>,
 }
@@ -125,7 +126,7 @@ impl Default for Progress {
 impl Progress {
     /// Initialize a new progress bar coordinator.
     pub fn new() -> Progress {
-        let out = LineWriter::new(std::io::stderr());
+        let out = BufWriter::new(std::io::stderr());
         let bars = vec![];
         let size = terminal_size().map(|(Width(w), Height(h))| (w as usize, h as usize));
         Progress { bars, out, size }
@@ -133,7 +134,7 @@ impl Progress {
 
     /// Like [`Progress::new`] but accepts a size hint to avoid reallocation as bar count grows.
     pub fn with_capacity(capacity: usize) -> Progress {
-        let out = LineWriter::new(std::io::stderr());
+        let out = BufWriter::new(std::io::stderr());
         let bars = Vec::with_capacity(capacity);
         let size = terminal_size().map(|(Width(w), Height(h))| (w as usize, h as usize));
         Progress { bars, out, size }
@@ -153,17 +154,18 @@ impl Progress {
 
         // An initial "empty" rendering of the new bar.
         let _ = writeln!(
-            &mut self.out,
+            self.out,
             "{:<l$}      [{:->f$}]   0%",
             label,
             "",
             l = twidth - w - 8 - 5,
             f = w
         );
+        let _ = self.out.flush();
 
         let bar = SubBar {
             curr: 0,
-            prev: 0,
+            prev_percent: 0,
             total,
             label,
             cancelled: false,
@@ -186,67 +188,72 @@ impl Progress {
     /// **Note 2:** If your program is not being run in a terminal, an initial
     /// empty bar will be printed but never refreshed.
     pub fn draw(&mut self, bar: &Bar) {
+        self.draw_impl(bar, false);
+
+        // Very important, or the output won't appear fluid.
+        let _ = self.out.flush();
+    }
+
+    /// Actually draw a particular [`Bar`].
+    ///
+    /// When `force` is true draw the bar at the current cursor position and
+    /// advance the cursor one line.
+    ///
+    /// This function does not flush the output stream.
+    fn draw_impl(&mut self, bar: &Bar, force: bool) {
         // If there is no legal width value present, that means we aren't
         // running in a terminal, and no rerendering can be done.
         if let Some((term_width, term_height)) = self.size {
             let pos = self.bars.len() - bar.0;
+            let mut b = &mut self.bars[bar.0];
+            let cur_percent = (100 * b.curr as u64) / (b.total as u64);
+            // For a newly cancelled bar `diff` is equal to 100.
+            let diff = cur_percent - b.prev_percent as u64;
 
             // For now, if the progress for a particular bar is slow and drifts
             // past the top of the terminal, redrawing is paused.
-            if pos < term_height {
-                let mut b = &mut self.bars[bar.0];
+            if (pos < term_height && diff >= 1) || force {
                 let w = (term_width / 2) - 7;
                 let (data, unit) = denomination(b.curr);
-                let diff = (100 * (b.curr - b.prev) as u64) / (b.total as u64);
+                b.prev_percent = cur_percent as usize;
 
+                if !force {
+                    // Save cursor position and then move up `pos` lines.
+                    let _ = write!(self.out, "\x1B[s\x1B[{}A\r", pos);
+                }
+
+                let _ = write!(
+                    self.out,
+                    "{:<l$} {:3}{} [",
+                    b.label,
+                    data,
+                    unit,
+                    l = term_width - w - 8 - 5,
+                );
                 if b.cancelled {
-                    let _ = write!(
-                        &mut self.out,
-                        "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:_>f$}] ???%\x1B[u\r",
-                        pos,
-                        b.label,
-                        data,
-                        unit,
-                        "",
-                        l = term_width - w - 8 - 5,
-                        f = w,
-                    );
-
-                    // Very important, or the output won't appear fluid.
-                    let _ = self.out.flush();
+                    let _ = write!(self.out, "{:_>f$}] ??? ", "", f = w);
                 } else if b.curr >= b.total {
-                    let _ = write!(
-                        &mut self.out,
-                        "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}] 100%\x1B[u\r",
-                        pos,
-                        b.label,
-                        data,
-                        unit,
-                        "",
-                        l = term_width - w - 8 - 5,
-                        f = w,
-                    );
-                    let _ = self.out.flush();
-                } else if diff >= 1 {
-                    b.prev = b.curr;
+                    let _ = write!(self.out, "{:#>f$}] 100%", "", f = w);
+                } else {
                     let f = (((w as u64) * (b.curr as u64) / (b.total as u64)) as usize).min(w - 1);
                     let e = (w - 1) - f;
 
                     let _ = write!(
-                        &mut self.out,
-                        "\x1B[s\x1B[{}A\r{:<l$} {:3}{} [{:#>f$}>{:->e$}] {:3}%\x1B[u\r",
-                        pos,
-                        b.label,
-                        data,
-                        unit,
+                        self.out,
+                        "{:#>f$}>{:->e$}] {:3}%",
                         "",
                         "",
                         (100 * (b.curr as u64)) / (b.total as u64),
-                        l = term_width - w - 8 - 5,
                         f = f,
                         e = e
                     );
-                    let _ = self.out.flush();
+                }
+
+                if !force {
+                    // Return to previously saved cursor position.
+                    let _ = write!(self.out, "\x1B[u\r");
+                } else {
+                    let _ = writeln!(self.out);
                 }
             }
         }
@@ -283,16 +290,33 @@ impl Progress {
         {
             let mut b = &mut self.bars[bar.0];
             b.cancelled = true;
+            // Force redraw by setting `prev_percent` to 0.
+            b.prev_percent = 0;
         }
         self.set_and_draw(&bar, self.bars[bar.0].total);
+    }
+
+    /// Print a message above all progress bars.
+    pub fn println(&mut self, s: &str) {
+        // Move to first line of the progress bars, erase the complete line and print the message.
+        let _ =
+            writeln!(self.out, "\x1B[{}A\x1B[2K\r{}", self.bars.len(), s).map_err(|_e| fmt::Error);
+
+        // Redraw all progress bars.
+        for bar in 0..self.bars.len() {
+            self.draw_impl(&Bar(bar), true);
+        }
+
+        // Flush all of them at once to reduce stutter.
+        let _ = self.out.flush();
     }
 }
 
 /// An internal structure that stores individual bar state.
 #[derive(Debug)]
 struct SubBar {
-    /// Progress as of the previous draw.
-    prev: usize,
+    /// Progress as of the previous draw in percent.
+    prev_percent: usize,
     /// Current progress.
     curr: usize,
     /// The progress target.

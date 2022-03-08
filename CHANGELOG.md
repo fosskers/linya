@@ -1,5 +1,11 @@
 # `linya` Changelog
 
+## 0.3.0 (2022-03-08)
+
+#### Added
+
+- The `println` function for `Progress`.
+
 ## 0.2.2 (2022-02-21)
 
 #### Fixed

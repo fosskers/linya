@@ -16,14 +16,14 @@ fn main() {
     // `for_each_with` and similar Rayon functions let us pass some `Clone`able
     // value to each concurrent operation. In this case, it's our Mutex-wrapped
     // progress bar coordinator.
-    (0..10).into_par_iter().for_each(|n| {
+    (0..10).into_par_iter().for_each(|i| {
         // Create a new bar handle. This itself is not a progress bar type as
         // found in similar libraries! Notice below that the increment/draw
         // calls are done on the parent `Progress` type, not this `Bar`.
         let bar: Bar = progress
             .lock()
             .unwrap()
-            .bar(BAR_MAX, format!("Downloading #{}", n));
+            .bar(BAR_MAX, format!("Downloading #{}", i));
 
         // Determine how fast our thread progresses.
         let wait = rand::thread_rng().gen_range(1..=10);
@@ -32,6 +32,14 @@ fn main() {
             // Only draws the line of the specified `Bar` without wasting
             // resources on the others.
             progress.lock().unwrap().set_and_draw(&bar, n);
+
+            // We are half way done, write a message.
+            if n == BAR_MAX / 2 {
+                progress
+                    .lock()
+                    .unwrap()
+                    .println(&format!("Half way done with #{}!", i));
+            }
 
             std::thread::sleep(Duration::from_millis(wait));
         }
