@@ -296,19 +296,51 @@ impl Progress {
         self.set_and_draw(&bar, self.bars[bar.0].total);
     }
 
-    /// Print a message above all progress bars.
-    pub fn println(&mut self, s: &str) {
+    /// Return a handle to write above all progress bars.
+    ///
+    /// When the handle is dropped all progress bars are redrawn.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fmt::Write;
+    ///
+    /// # use linya::Progress;
+    /// # let mut progress = Progress::new();
+    /// writeln!(progress.stderr(), "Some log message");
+    /// ```
+    pub fn stderr(&mut self) -> impl fmt::Write + '_ {
         // Move to first line of the progress bars, erase the complete line and print the message.
-        let _ =
-            writeln!(self.out, "\x1B[{}A\x1B[2K\r{}", self.bars.len(), s).map_err(|_e| fmt::Error);
+        let _ = write!(self.out, "\x1B[{}A\x1B[2K\r", self.bars.len()).map_err(|_e| fmt::Error);
+        WriteHandle { prog: self }
+    }
+}
 
+/// A write handle that exclusively holds a [`Progress`] instance so
+/// that no draws can interfere with writing.
+#[derive(Debug)]
+struct WriteHandle<'a> {
+    prog: &'a mut Progress,
+}
+
+impl<'a> fmt::Write for WriteHandle<'a> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.prog
+            .out
+            .write_all(s.as_bytes())
+            .map_err(|_e| fmt::Error)
+    }
+}
+
+impl<'a> Drop for WriteHandle<'a> {
+    fn drop(&mut self) {
         // Redraw all progress bars.
-        for bar in 0..self.bars.len() {
-            self.draw_impl(&Bar(bar), true);
+        for bar in 0..self.prog.bars.len() {
+            self.prog.draw_impl(&Bar(bar), true);
         }
 
         // Flush all of them at once to reduce stutter.
-        let _ = self.out.flush();
+        let _ = self.prog.out.flush();
     }
 }
 

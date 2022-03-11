@@ -1,6 +1,7 @@
 use linya::{Bar, Progress};
 use rand::Rng;
 use rayon::prelude::*;
+use std::fmt::Write;
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -35,10 +36,11 @@ fn main() {
 
             // We are half way done, write a message.
             if n == BAR_MAX / 2 {
-                progress
-                    .lock()
-                    .unwrap()
-                    .println(&format!("Half way done with #{}!", i));
+                let _ = writeln!(
+                    progress.lock().unwrap().stderr(),
+                    "Half way done with #{}!",
+                    i
+                );
             }
 
             std::thread::sleep(Duration::from_millis(wait));
