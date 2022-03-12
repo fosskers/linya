@@ -334,8 +334,21 @@ impl<'a> fmt::Write for WriteHandle<'a> {
 
 impl<'a> Drop for WriteHandle<'a> {
     fn drop(&mut self) {
+        // Determine first bar that fits on screen.
+        let start = self
+            .prog
+            .size
+            .map(|(_w, h)| {
+                if self.prog.bars.len() >= h {
+                    self.prog.bars.len() - (h - 1)
+                } else {
+                    0
+                }
+            })
+            .unwrap_or_default();
+
         // Redraw all progress bars.
-        for bar in 0..self.prog.bars.len() {
+        for bar in start..self.prog.bars.len() {
             self.prog.draw_impl(&Bar(bar), true);
         }
 
