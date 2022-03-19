@@ -34,15 +34,6 @@ fn main() {
             // resources on the others.
             progress.lock().unwrap().set_and_draw(&bar, n);
 
-            // We are half way done, write a message.
-            if n == BAR_MAX / 2 {
-                let _ = writeln!(
-                    progress.lock().unwrap().stderr(),
-                    "Half way done with #{}!",
-                    i
-                );
-            }
-
             std::thread::sleep(Duration::from_millis(wait));
         }
     });

@@ -311,7 +311,7 @@ impl Progress {
     /// ```
     pub fn stderr(&mut self) -> impl fmt::Write + '_ {
         // Move to first line of the progress bars, erase the complete line and print the message.
-        let _ = write!(self.out, "\x1B[{}A\x1B[2K\r", self.bars.len()).map_err(|_e| fmt::Error);
+        let _ = write!(self.out, "\x1B[{}A\x1B[2K\r", self.bars.len()).map_err(|_| fmt::Error);
         WriteHandle { prog: self }
     }
 }
