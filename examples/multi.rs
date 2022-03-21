@@ -1,7 +1,6 @@
 use linya::{Bar, Progress};
 use rand::Rng;
 use rayon::prelude::*;
-use std::fmt::Write;
 use std::sync::Mutex;
 use std::time::Duration;
 
