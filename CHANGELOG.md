@@ -4,7 +4,8 @@
 
 #### Added
 
-- The `println` function for `Progress`.
+- The `stderr` method for `Progress`, which allows one to print intermittent
+  messages alongside the progress bars.
 
 ## 0.2.2 (2022-02-21)
 
