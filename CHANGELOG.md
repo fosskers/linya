@@ -1,6 +1,6 @@
 # `linya` Changelog
 
-## Unreleased
+## 0.3.0 (2022-05-18)
 
 #### Added
 
