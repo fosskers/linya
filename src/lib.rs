@@ -179,6 +179,17 @@ impl Progress {
         self.bars[bar.0].curr = value;
     }
 
+    /// Set a particular [`Bar`]'s progress target value.
+    /// Useful in cases where you don't know the total ahead of time.
+    pub fn set_target(&mut self, bar: &Bar, total: usize) {
+        self.bars[bar.0].total = total;
+    }
+
+    /// Set a particular [`Bar`]'s label.
+    pub fn set_label<S: Into<String>>(&mut self, bar: &Bar, label: S) {
+        self.bars[bar.0].label = label.into();
+    }
+
     /// Force the drawing of a particular [`Bar`].
     ///
     /// **Note 1:** Drawing will only occur if there is something meaningful to
@@ -262,6 +273,20 @@ impl Progress {
     /// Set a [`Bar`]'s value and immediately try to draw it.
     pub fn set_and_draw(&mut self, bar: &Bar, value: usize) {
         self.set(bar, value);
+        self.draw(bar);
+    }
+
+    /// Set a particular [`Bar`]'s progress target value and immediately
+    /// try to draw it.
+    pub fn set_target_and_draw(&mut self, bar: &Bar, total: usize) {
+        self.set_target(bar, total);
+        self.draw(bar);
+    }
+
+    /// Set a particular [`Bar`]'s label and immediately try to
+    /// draw it.
+    pub fn set_label_and_draw<S: Into<String>>(&mut self, bar: &Bar, label: S) {
+        self.set_label(bar, label);
         self.draw(bar);
     }
 
