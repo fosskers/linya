@@ -179,8 +179,9 @@ impl Progress {
         self.bars[bar.0].curr = value;
     }
 
-    /// Set a particular [`Bar`]'s total progress value.
-    pub fn set_total(&mut self, bar: &Bar, total: usize) {
+    /// Set a particular [`Bar`]'s progress target value.
+    /// Useful in cases where you don't know the total ahead of time.
+    pub fn set_target(&mut self, bar: &Bar, total: usize) {
         self.bars[bar.0].total = total;
     }
 
@@ -275,10 +276,10 @@ impl Progress {
         self.draw(bar);
     }
 
-    /// Set a particular [`Bar`]'s total progress value and immediately
+    /// Set a particular [`Bar`]'s progress target value and immediately
     /// try to draw it.
-    pub fn set_total_and_draw(&mut self, bar: &Bar, total: usize) {
-        self.set_total(bar, total);
+    pub fn set_target_and_draw(&mut self, bar: &Bar, total: usize) {
+        self.set_target(bar, total);
         self.draw(bar);
     }
 
